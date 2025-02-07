@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Booking {
+  booking_id     Int        @id @default(autoincrement())
+  user_id        Int?
+  property_id    Int?
+  check_in_date  DateTime  
+  check_out_date DateTime   
+  is_approved    Boolean?   @default(false)
+  property       Property?  @relation(fields: [property_id], references: [property_id], onDelete: NoAction, onUpdate: NoAction)
+  user           User?      @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model Category {
+  category_id   Int          @id @default(autoincrement())
+  category_name String       @db.VarChar(100)
+  properties    Property[]
+}
+
+model City {
+  city_id    Int          @id @default(autoincrement())
+  city_name  String       @db.VarChar(100)
+  districts  District[]
+  properties Property[]
+}
+
+model District {
+  district_id   Int          @id @default(autoincrement())
+  district_name String       @db.VarChar(100)
+  city_id       Int?
+  city          City?        @relation(fields: [city_id], references: [city_id], onDelete: NoAction, onUpdate: NoAction)
+  properties    Property[]
+}
+
+model Favorite {
+  favorite_id Int         @id @default(autoincrement())
+  user_id     Int?
+  property_id Int?
+  property    Property?   @relation(fields: [property_id], references: [property_id], onDelete: NoAction, onUpdate: NoAction)
+  user        User?       @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([user_id, property_id])
+}
+
+model Payment {
+  payment_id   Int         @id @default(autoincrement())
+  user_id      Int?
+  property_id  Int?
+  amount       Decimal     @db.Decimal(10, 2)
+  payment_date DateTime?   @default(now()) @db.Timestamp(6)
+  property     Property?   @relation(fields: [property_id], references: [property_id], onDelete: NoAction, onUpdate: NoAction)
+  user         User?       @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+
+model Property {
+  property_id     Int             @id @default(autoincrement())
+  property_name   String          @db.VarChar(255)
+  city_id         Int?
+  district_id     Int?
+  category_id     Int?
+  type_id         Int?
+  room_count      Int?
+  bed_count       Int?
+  price           Decimal?        @db.Decimal(10, 2)
+  description     String?
+  bookings        Booking[]
+  favorites       Favorite[]
+  payments        Payment[]
+  category        Category?       @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction)
+  city            City?           @relation(fields: [city_id], references: [city_id], onDelete: NoAction, onUpdate: NoAction)
+  district        District?       @relation(fields: [district_id], references: [district_id], onDelete: NoAction, onUpdate: NoAction)
+  property_type   PropertyType?   @relation(fields: [type_id], references: [type_id], onDelete: NoAction, onUpdate: NoAction)
+  property_photos PropertyPhoto[]
+  property_comments PropertyComment[]
+}
+
+model PropertyPhoto {
+  photo_id    Int         @id @default(autoincrement())
+  property_id Int?
+  photo       Bytes
+  property    Property?   @relation(fields: [property_id], references: [property_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model PropertyComment {
+  id          Int      @id @default(autoincrement())
+  property_id Int
+  property    Property @relation(fields: [property_id], references: [property_id], onDelete: Cascade)
+  user_id     Int
+  user        User     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  comment_text String
+  rating      Int      @db.Integer  
+  created_at   DateTime @default(now())
+}
+
+model PropertyType {
+  type_id    Int          @id @default(autoincrement())
+  type_name  String       @db.VarChar(100)
+  properties Property[]
+}
+
+model User {
+  user_id      Int         @id @default(autoincrement())
+  first_name   String      @db.VarChar(100)
+  last_name    String      @db.VarChar(100)
+  phone_number String?     @db.VarChar(20)
+  email        String      @unique @db.VarChar(255)
+  birth_date   DateTime?   @db.Date
+  password     String      @db.VarChar(255)
+  bookings     Booking[]
+  favorites    Favorite[]
+  payments     Payment[]
+  property_comments PropertyComment[]
+}
